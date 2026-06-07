@@ -570,10 +570,15 @@ function updateProgressBar() {
 
   var elapsed = Date.now() - dayProgressStart;
   var progress = Math.min((elapsed % DAY_DURATION_MS) / DAY_DURATION_MS, 1);
-  var percent = Math.round(progress * 100);
 
-  DOM.progressFill.style.width = percent + '%';
-  DOM.progressPercent.textContent = percent + '%';
+  // Map progress (0–1) to 24-hour clock (00:00–23:59)
+  var totalMinutes = Math.floor(progress * 1440); // 24 * 60 = 1440 minutes in a day
+  var hours = Math.floor(totalMinutes / 60);
+  var minutes = totalMinutes % 60;
+  var timeStr = (hours < 10 ? '0' : '') + hours + ':' + (minutes < 10 ? '0' : '') + minutes;
+
+  DOM.progressFill.style.width = (progress * 100) + '%';
+  DOM.progressPercent.textContent = timeStr;
 
   // Reset progress start when a day completes
   if (elapsed >= DAY_DURATION_MS) {
