@@ -1,4 +1,4 @@
-c // ========================================================
+// ========================================================
 // FarmCraft — Full Game Logic
 // ========================================================
 
@@ -21,6 +21,24 @@ const CROPS = {
     growthTime: 4,
     profit: 70,
     season: 'Monsoon'
+  },
+  sugarcane: {
+    name: 'Sugarcane',
+    icon: '🎋',
+    growingIcon: '🪴',
+    cost: 25,
+    growthTime: 6,
+    profit: 120,
+    season: 'Monsoon'
+  },
+  cotton: {
+    name: 'Cotton',
+    icon: '☁️',
+    growingIcon: '🌿',
+    cost: 20,
+    growthTime: 5,
+    profit: 100,
+    season: 'Summer'
   }
 };
 
@@ -97,7 +115,7 @@ function initGrid() {
     gameState.grid.push({
       index: i,
       state: 'empty',    // 'empty', 'growing', 'ready', 'dead'
-      crop: null,         // crop key: 'wheat' or 'rice'
+      crop: null,         // crop key: 'wheat', 'rice', 'sugarcane', or 'cotton'
       daysGrown: 0,
       growthTarget: 0
     });
@@ -121,7 +139,7 @@ function initGame() {
   render();
   clearLog();
   addLogEntry('🌾 Welcome to FarmCraft! Plant wisely and survive.', 'plant');
-  addLogEntry(`📅 Day 1 begins — Season: Summer — Weather: ${gameState.weather.name} ${gameState.weather.icon}`, 'weather');
+  addLogEntry('📅 Day 1 begins — Season: Summer — Weather: ' + gameState.weather.name + ' ' + gameState.weather.icon, 'weather');
 
   // Highlight default selected crop
   selectCrop('wheat');
@@ -141,10 +159,10 @@ function buildGridDOM() {
     const tile = document.createElement('div');
     tile.classList.add('tile', 'empty');
     tile.dataset.index = i;
-    tile.id = `tile-${i}`;
+    tile.id = 'tile-' + i;
 
     // Click to plant/harvest
-    tile.addEventListener('mousedown', (e) => {
+    tile.addEventListener('mousedown', function(e) {
       e.preventDefault();
       handleTileAction(i);
       dragState.isDragging = true;
@@ -153,7 +171,7 @@ function buildGridDOM() {
     });
 
     // Drag planting
-    tile.addEventListener('mouseenter', () => {
+    tile.addEventListener('mouseenter', function() {
       if (dragState.isDragging && !dragState.plantedDuringDrag.has(i)) {
         handleTilePlant(i);
         dragState.plantedDuringDrag.add(i);
@@ -161,7 +179,7 @@ function buildGridDOM() {
     });
 
     // Touch support for drag planting
-    tile.addEventListener('touchstart', (e) => {
+    tile.addEventListener('touchstart', function(e) {
       e.preventDefault();
       handleTileAction(i);
       dragState.isDragging = true;
@@ -174,23 +192,23 @@ function buildGridDOM() {
 }
 
 // Global mouseup to stop dragging
-document.addEventListener('mouseup', () => {
+document.addEventListener('mouseup', function() {
   dragState.isDragging = false;
   dragState.plantedDuringDrag.clear();
 });
 
-document.addEventListener('touchend', () => {
+document.addEventListener('touchend', function() {
   dragState.isDragging = false;
   dragState.plantedDuringDrag.clear();
 });
 
 // Touch move handler for drag planting on mobile
-DOM.grid.addEventListener('touchmove', (e) => {
+DOM.grid.addEventListener('touchmove', function(e) {
   if (!dragState.isDragging) return;
-  const touch = e.touches[0];
-  const element = document.elementFromPoint(touch.clientX, touch.clientY);
+  var touch = e.touches[0];
+  var element = document.elementFromPoint(touch.clientX, touch.clientY);
   if (element && element.classList.contains('tile')) {
-    const index = parseInt(element.dataset.index);
+    var index = parseInt(element.dataset.index);
     if (!dragState.plantedDuringDrag.has(index)) {
       handleTilePlant(index);
       dragState.plantedDuringDrag.add(index);
@@ -206,7 +224,7 @@ DOM.grid.addEventListener('touchmove', (e) => {
 function handleTileAction(index) {
   if (gameState.isGameOver) return;
 
-  const tile = gameState.grid[index];
+  var tile = gameState.grid[index];
 
   if (tile.state === 'ready') {
     harvestTile(index);
@@ -219,7 +237,7 @@ function handleTileAction(index) {
     tile.crop = null;
     tile.daysGrown = 0;
     tile.growthTarget = 0;
-    addLogEntry(`🧹 Cleared dead crop at tile ${index + 1}`, 'warning');
+    addLogEntry('🧹 Cleared dead crop at tile ' + (index + 1), 'warning');
     render();
   }
 }
@@ -227,11 +245,11 @@ function handleTileAction(index) {
 function handleTilePlant(index) {
   if (gameState.isGameOver) return;
 
-  const tile = gameState.grid[index];
+  var tile = gameState.grid[index];
   if (tile.state !== 'empty') return;
 
-  const cropKey = gameState.selectedCrop;
-  const crop = CROPS[cropKey];
+  var cropKey = gameState.selectedCrop;
+  var crop = CROPS[cropKey];
 
   // Check if enough money
   if (gameState.money < crop.cost) {
@@ -249,20 +267,20 @@ function handleTilePlant(index) {
   gameState.money -= crop.cost;
   gameState.totalSpent += crop.cost;
 
-  addLogEntry(`🌱 Planted ${crop.name} at tile ${index + 1} (cost ₹${crop.cost})`, 'plant');
+  addLogEntry('🌱 Planted ' + crop.name + ' at tile ' + (index + 1) + ' (cost ₹' + crop.cost + ')', 'plant');
   render();
 }
 
 function harvestTile(index) {
-  const tile = gameState.grid[index];
+  var tile = gameState.grid[index];
   if (tile.state !== 'ready') return;
 
-  const crop = CROPS[tile.crop];
+  var crop = CROPS[tile.crop];
   gameState.money += crop.profit;
   gameState.totalEarned += crop.profit;
   gameState.cropsHarvested++;
 
-  addLogEntry(`💰 Harvested ${crop.name} at tile ${index + 1} (+₹${crop.profit})`, 'harvest');
+  addLogEntry('💰 Harvested ' + crop.name + ' at tile ' + (index + 1) + ' (+₹' + crop.profit + ')', 'harvest');
 
   // Reset tile
   tile.state = 'empty';
@@ -271,10 +289,10 @@ function harvestTile(index) {
   tile.growthTarget = 0;
 
   // Harvest animation
-  const tileEl = document.getElementById(`tile-${index}`);
+  var tileEl = document.getElementById('tile-' + index);
   if (tileEl) {
     tileEl.classList.add('harvesting');
-    setTimeout(() => tileEl.classList.remove('harvesting'), 400);
+    setTimeout(function() { tileEl.classList.remove('harvesting'); }, 400);
   }
 
   render();
@@ -288,13 +306,13 @@ function harvestTile(index) {
 function collectAll() {
   if (gameState.isGameOver) return;
 
-  let harvestedCount = 0;
-  let totalProfit = 0;
+  var harvestedCount = 0;
+  var totalProfit = 0;
 
-  for (let i = 0; i < TOTAL_TILES; i++) {
-    const tile = gameState.grid[i];
+  for (var i = 0; i < TOTAL_TILES; i++) {
+    var tile = gameState.grid[i];
     if (tile.state === 'ready') {
-      const crop = CROPS[tile.crop];
+      var crop = CROPS[tile.crop];
       gameState.money += crop.profit;
       gameState.totalEarned += crop.profit;
       gameState.cropsHarvested++;
@@ -307,17 +325,19 @@ function collectAll() {
       tile.growthTarget = 0;
 
       // Animation
-      const tileEl = document.getElementById(`tile-${i}`);
+      var tileEl = document.getElementById('tile-' + i);
       if (tileEl) {
         tileEl.classList.add('harvesting');
-        setTimeout(() => tileEl.classList.remove('harvesting'), 400);
+        (function(el) {
+          setTimeout(function() { el.classList.remove('harvesting'); }, 400);
+        })(tileEl);
       }
     }
   }
 
   if (harvestedCount > 0) {
-    addLogEntry(`💰 Collected ${harvestedCount} crops (+₹${totalProfit})`, 'harvest');
-    showNotification(`💰 Harvested ${harvestedCount} crops for ₹${totalProfit}!`);
+    addLogEntry('💰 Collected ' + harvestedCount + ' crops (+₹' + totalProfit + ')', 'harvest');
+    showNotification('💰 Harvested ' + harvestedCount + ' crops for ₹' + totalProfit + '!');
   }
 
   render();
@@ -332,9 +352,11 @@ function selectCrop(cropKey) {
   gameState.selectedCrop = cropKey;
 
   // Update button UI
-  document.querySelectorAll('.crop-btn').forEach(btn => btn.classList.remove('selected'));
-  const btnId = `btn-${cropKey}`;
-  const btn = document.getElementById(btnId);
+  var allBtns = document.querySelectorAll('.crop-btn');
+  for (var i = 0; i < allBtns.length; i++) {
+    allBtns[i].classList.remove('selected');
+  }
+  var btn = document.getElementById('btn-' + cropKey);
   if (btn) btn.classList.add('selected');
 }
 
@@ -372,7 +394,7 @@ function nextDay() {
 
   // 8. Log new day
   addLogEntry(
-    `📅 Day ${gameState.day} — ${gameState.season} — ${gameState.weather.name} ${gameState.weather.icon}`,
+    '📅 Day ' + gameState.day + ' — ' + gameState.season + ' — ' + gameState.weather.name + ' ' + gameState.weather.icon,
     'weather'
   );
 
@@ -382,14 +404,15 @@ function nextDay() {
 
 function updateSeason() {
   // Day 1-5 → Summer, Day 6-10 → Monsoon, then repeat
-  const dayInCycle = ((gameState.day - 1) % SEASON_CYCLE_DAYS) + 1;
+  var dayInCycle = ((gameState.day - 1) % SEASON_CYCLE_DAYS) + 1;
   gameState.season = dayInCycle <= 5 ? 'Summer' : 'Monsoon';
 }
 
 function updateWeather() {
-  const roll = Math.random();
-  let cumulative = 0;
-  for (const w of WEATHER_TYPES) {
+  var roll = Math.random();
+  var cumulative = 0;
+  for (var i = 0; i < WEATHER_TYPES.length; i++) {
+    var w = WEATHER_TYPES[i];
     cumulative += w.probability;
     if (roll <= cumulative) {
       gameState.weather = { name: w.name, icon: w.icon };
@@ -401,12 +424,12 @@ function updateWeather() {
 }
 
 function updateCrops() {
-  for (let i = 0; i < TOTAL_TILES; i++) {
-    const tile = gameState.grid[i];
+  for (var i = 0; i < TOTAL_TILES; i++) {
+    var tile = gameState.grid[i];
     if (tile.state !== 'growing') continue;
 
-    const crop = CROPS[tile.crop];
-    let growthThisDay = 1; // base growth
+    var crop = CROPS[tile.crop];
+    var growthThisDay = 1; // base growth
 
     // --- Weather effects ---
     if (gameState.weather.name === 'Rain') {
@@ -414,12 +437,12 @@ function updateCrops() {
       growthThisDay += 2;
     } else if (gameState.weather.name === 'Drought') {
       // Drought: 40% chance crop doesn't grow, 20% chance crop dies
-      const droughtRoll = Math.random();
+      var droughtRoll = Math.random();
       if (droughtRoll < 0.20) {
         // Crop dies
         tile.state = 'dead';
         tile.daysGrown = 0;
-        addLogEntry(`💀 ${crop.name} at tile ${i + 1} died from drought!`, 'warning');
+        addLogEntry('💀 ' + crop.name + ' at tile ' + (i + 1) + ' died from drought!', 'warning');
         continue;
       } else if (droughtRoll < 0.60) {
         // Doesn't grow this day
@@ -453,14 +476,14 @@ function updateCrops() {
 function applyExpenses() {
   gameState.money -= DAILY_EXPENSES;
   gameState.totalSpent += DAILY_EXPENSES;
-  addLogEntry(`📉 Daily expenses: -₹${DAILY_EXPENSES} (Family ₹${FAMILY_COST} + Workers ₹${WORKER_COST})`, 'expense');
+  addLogEntry('📉 Daily expenses: -₹' + DAILY_EXPENSES + ' (Family ₹' + FAMILY_COST + ' + Workers ₹' + WORKER_COST + ')', 'expense');
 }
 
 function checkWarnings() {
   if (gameState.money >= 0 && gameState.money < LOW_MONEY_THRESHOLD) {
     DOM.warningBanner.classList.add('visible');
-    DOM.warningText.textContent = `⚠️ Low funds! Only ₹${gameState.money} left. Harvest crops quickly!`;
-    addLogEntry(`⚠️ WARNING: Money is low (₹${gameState.money})`, 'warning');
+    DOM.warningText.textContent = '⚠️ Low funds! Only ₹' + gameState.money + ' left. Harvest crops quickly!';
+    addLogEntry('⚠️ WARNING: Money is low (₹' + gameState.money + ')', 'warning');
   } else {
     DOM.warningBanner.classList.remove('visible');
   }
@@ -476,9 +499,9 @@ function triggerGameOver() {
   stopTimers();
 
   DOM.finalStats.innerHTML =
-    `Survived ${gameState.day} days<br>` +
-    `Earned ₹${gameState.totalEarned} | Spent ₹${gameState.totalSpent}<br>` +
-    `Crops harvested: ${gameState.cropsHarvested}`;
+    'Survived ' + gameState.day + ' days<br>' +
+    'Earned ₹' + gameState.totalEarned + ' | Spent ₹' + gameState.totalSpent + '<br>' +
+    'Crops harvested: ' + gameState.cropsHarvested;
 
   DOM.gameOverOverlay.classList.add('visible');
 }
@@ -520,13 +543,13 @@ function startTimers() {
   stopTimers(); // clear any existing
 
   // Day cycle timer
-  dayTimer = setInterval(() => {
+  dayTimer = setInterval(function() {
     nextDay();
   }, DAY_DURATION_MS);
 
   // Progress bar animation
   dayProgressStart = Date.now();
-  progressTimer = setInterval(() => {
+  progressTimer = setInterval(function() {
     updateProgressBar();
   }, PROGRESS_INTERVAL_MS);
 }
@@ -545,12 +568,12 @@ function stopTimers() {
 function updateProgressBar() {
   if (gameState.isPaused || gameState.isGameOver) return;
 
-  const elapsed = Date.now() - dayProgressStart;
-  const progress = Math.min((elapsed % DAY_DURATION_MS) / DAY_DURATION_MS, 1);
-  const percent = Math.round(progress * 100);
+  var elapsed = Date.now() - dayProgressStart;
+  var progress = Math.min((elapsed % DAY_DURATION_MS) / DAY_DURATION_MS, 1);
+  var percent = Math.round(progress * 100);
 
-  DOM.progressFill.style.width = `${percent}%`;
-  DOM.progressPercent.textContent = `${percent}%`;
+  DOM.progressFill.style.width = percent + '%';
+  DOM.progressPercent.textContent = percent + '%';
 
   // Reset progress start when a day completes
   if (elapsed >= DAY_DURATION_MS) {
@@ -570,7 +593,7 @@ function render() {
 
 function renderStats() {
   // Money
-  DOM.money.textContent = `₹${gameState.money}`;
+  DOM.money.textContent = '₹' + gameState.money;
   if (gameState.money < LOW_MONEY_THRESHOLD) {
     DOM.money.style.color = '#ef4444';
   } else {
@@ -578,7 +601,7 @@ function renderStats() {
   }
 
   // Day
-  DOM.day.textContent = `Day ${gameState.day}`;
+  DOM.day.textContent = 'Day ' + gameState.day;
 
   // Season
   DOM.season.textContent = gameState.season;
@@ -590,13 +613,13 @@ function renderStats() {
   }
 
   // Weather
-  DOM.weather.textContent = `${gameState.weather.name} ${gameState.weather.icon}`;
+  DOM.weather.textContent = gameState.weather.name + ' ' + gameState.weather.icon;
 }
 
 function renderGrid() {
-  for (let i = 0; i < TOTAL_TILES; i++) {
-    const tileData = gameState.grid[i];
-    const tileEl = document.getElementById(`tile-${i}`);
+  for (var i = 0; i < TOTAL_TILES; i++) {
+    var tileData = gameState.grid[i];
+    var tileEl = document.getElementById('tile-' + i);
     if (!tileEl) continue;
 
     // Reset classes
@@ -608,40 +631,34 @@ function renderGrid() {
         tileEl.classList.add('empty');
         break;
 
-      case 'growing': {
+      case 'growing':
         tileEl.classList.add('growing');
-        const crop = CROPS[tileData.crop];
-        const daysLeft = tileData.growthTarget - tileData.daysGrown;
+        var cropG = CROPS[tileData.crop];
+        var daysLeft = tileData.growthTarget - tileData.daysGrown;
 
-        tileEl.innerHTML = `
-          <span class="tile-icon">${crop.growingIcon}</span>
-          <span class="tile-label">${crop.name}</span>
-          <span class="tile-days">${Math.max(0, daysLeft)}d left</span>
-        `;
+        tileEl.innerHTML =
+          '<span class="tile-icon">' + cropG.growingIcon + '</span>' +
+          '<span class="tile-label">' + cropG.name + '</span>' +
+          '<span class="tile-days">' + Math.max(0, daysLeft) + 'd left</span>';
         break;
-      }
 
-      case 'ready': {
+      case 'ready':
         tileEl.classList.add('ready');
-        const crop = CROPS[tileData.crop];
+        var cropR = CROPS[tileData.crop];
 
-        tileEl.innerHTML = `
-          <span class="tile-icon">💰</span>
-          <span class="tile-label">${crop.name}</span>
-          <span class="tile-days">+₹${crop.profit}</span>
-        `;
+        tileEl.innerHTML =
+          '<span class="tile-icon">💰</span>' +
+          '<span class="tile-label">' + cropR.name + '</span>' +
+          '<span class="tile-days">+₹' + cropR.profit + '</span>';
         break;
-      }
 
-      case 'dead': {
+      case 'dead':
         tileEl.classList.add('dead');
-        tileEl.innerHTML = `
-          <span class="tile-icon">💀</span>
-          <span class="tile-label">Dead</span>
-          <span class="tile-days">Click to clear</span>
-        `;
+        tileEl.innerHTML =
+          '<span class="tile-icon">💀</span>' +
+          '<span class="tile-label">Dead</span>' +
+          '<span class="tile-days">Click to clear</span>';
         break;
-      }
     }
   }
 }
@@ -651,11 +668,12 @@ function renderGrid() {
 // EVENT LOG
 // ========================================================
 
-function addLogEntry(message, type = '') {
-  const entry = document.createElement('div');
+function addLogEntry(message, type) {
+  type = type || '';
+  var entry = document.createElement('div');
   entry.classList.add('log-entry');
   if (type) entry.classList.add(type);
-  entry.textContent = `[Day ${gameState.day}] ${message}`;
+  entry.textContent = '[Day ' + gameState.day + '] ' + message;
 
   DOM.logEntries.prepend(entry);
 
@@ -675,12 +693,12 @@ function clearLog() {
 // ========================================================
 
 function showNotification(message) {
-  const notif = document.createElement('div');
+  var notif = document.createElement('div');
   notif.classList.add('float-notification');
   notif.textContent = message;
   document.body.appendChild(notif);
 
-  setTimeout(() => {
+  setTimeout(function() {
     if (notif.parentElement) {
       notif.parentElement.removeChild(notif);
     }
