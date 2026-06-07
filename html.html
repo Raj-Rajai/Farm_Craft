@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Farming Game</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #fdc775;
+    }
+
+    h2 {
+      margin-top: 10px;
+    }
+
+    #info {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px;
+    }
+
+    .card {
+      background: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    #progressBar {
+      width: 300px;
+      height: 10px;
+      background: #ddd;
+      margin: 10px auto;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #progress {
+      height: 100%;
+      width: 0%;
+      background: #4caf50;
+      transition: width 0.1s linear;
+    }
+
+    #controls button {
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #eee;
+      font-size: 14px;
+    }
+
+    .selected {
+      background: #4caf50 !important;
+      color: white;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(5, 65px);
+      gap: 8px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .tile {
+      width: 65px;
+      height: 65px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.2s;
+    }
+
+    .tile:hover {
+      transform: scale(1.05);
+    }
+
+    .empty { background: #dfe6e9; }
+    .growing { background: #81c784; }
+    .ready { background: #ffd54f; }
+  </style>
+</head>
+
+<body>
+
+<h2>🌾 Farming Game</h2>
+
+<div id="info">
+  <div class="card">📅 Day: <span id="day">1</span></div>
+  <div class="card">🌦️ Season: <span id="season">Summer</span></div>
+  <div class="card">💰 ₹<span id="money">100</span></div>
+</div>
+
+<div id="progressBar">
+  <div id="progress"></div>
+</div>
+
+<div id="controls">
+  <button id="wheatBtn" onclick="selectCrop('wheat')">🌾 Wheat</button>
+  <button id="riceBtn" onclick="selectCrop('rice')">🌱 Rice</button>
+</div>
+
+<div id="grid"></div>
+
+<script>
+// ================= GAME STATE =================
+let currentDay = 1;
+let currentSeason = "summer";
+let money = 100;
+let selectedCrop = null;
+let dayDuration = 9000;
+
+let progress = 0;
+
+const crops = {
+  wheat: { cost: 10, growth: 3, profit: 50, season: "summer" },
+  rice: { cost: 15, growth: 4, profit: 70, season: "monsoon" }
+};
+
+let grid = [];
+
+// ================= INIT =================
+function initGrid() {
+  const gridDiv = document.getElementById("grid");
+
+  for (let i = 0; i < 25; i++) {
+    let tile = {
+      crop: null,
+      growth: 0,
+      ready: false
+    };
+
+    grid.push(tile);
+
+    let div = document.createElement("div");
+    div.classList.add("tile", "empty");
+
+    div.onclick = () => handleTileClick(i);
+
+    gridDiv.appendChild(div);
+  }
+
+  render();
+}
+
+// ================= RENDER =================
+function render() {
+  const tiles = document.querySelectorAll(".tile");
+
+  tiles.forEach((div, i) => {
+    let tile = grid[i];
+
+    div.className = "tile";
+
+    if (!tile.crop) {
+      div.classList.add("empty");
+      div.innerText = "";
+    } 
+    else if (tile.ready) {
+      div.classList.add("ready");
+      div.innerText = "💰";
+    } 
+    else {
+      div.classList.add("growing");
+      div.innerText = tile.crop === "wheat" ? "🌾" : "🌱";
+    }
+  });
+
+  document.getElementById("day").innerText = currentDay;
+  document.getElementById("season").innerText =
+    currentSeason.charAt(0).toUpperCase() + currentSeason.slice(1);
+  document.getElementById("money").innerText = money;
+}
+
+// ================= TILE CLICK =================
+function handleTileClick(index) {
+  let tile = grid[index];
+
+  // Harvest
+  if (tile.ready) {
+    let cropData = crops[tile.crop];
+    money += cropData.profit;
+
+    grid[index] = { crop: null, growth: 0, ready: false };
+    render();
+    return;
+  }
+
+  // Plant
+  if (!tile.crop && selectedCrop) {
+    let cropData = crops[selectedCrop];
+
+    if (money >= cropData.cost) {
+      money -= cropData.cost;
+
+      grid[index] = {
+        crop: selectedCrop,
+        growth: 0,
+        ready: false
+      };
+
+      render();
+    }
+  }
+}
+
+// ================= SELECT CROP =================
+function selectCrop(type) {
+  selectedCrop = type;
+
+  document.querySelectorAll("#controls button").forEach(btn => {
+    btn.classList.remove("selected");
+  });
+
+  document.getElementById(type + "Btn").classList.add("selected");
+}
+
+// ================= DAY SYSTEM =================
+function startGameLoop() {
+  setInterval(() => {
+    nextDay();
+  }, dayDuration);
+}
+
+function nextDay() {
+  currentDay++;
+
+  updateSeason();
+  updateCrops();
+
+  progress = 0; // reset progress bar
+  render();
+}
+
+// ================= SEASON =================
+function updateSeason() {
+  let d = currentDay % 10;
+
+  if (d >= 1 && d <= 5) {
+    currentSeason = "summer";
+  } else {
+    currentSeason = "monsoon";
+  }
+}
+
+// ================= CROP GROWTH =================
+function updateCrops() {
+  grid.forEach(tile => {
+    if (tile.crop) {
+      let cropData = crops[tile.crop];
+
+      // Wrong season penalty
+      if (cropData.season !== currentSeason) {
+        if (Math.random() < 0.5) return;
+      }
+
+      tile.growth++;
+
+      if (tile.growth >= cropData.growth) {
+        tile.ready = true;
+      }
+    }
+  });
+}
+
+// ================= PROGRESS BAR =================
+function startProgressBar() {
+  setInterval(() => {
+    progress += 100 / (dayDuration / 100);
+
+    if (progress >= 100) progress = 100;
+
+    document.getElementById("progress").style.width = progress + "%";
+  }, 100);
+}
+
+// ================= START =================
+initGrid();
+startGameLoop();
+startProgressBar();
+
+</script>
+<article>
+    <p>Hint!</p>
+    <p>for summer plant wheat</p>
+    <p>for monsoon plant rice</p>
+</article>
+</body>
+</html>
